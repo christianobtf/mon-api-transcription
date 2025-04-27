@@ -11,6 +11,11 @@ def extract_video_id(url):
     match = re.search(pattern, url)
     return match.group(1) if match else None
 
+@app.route('/', methods=['GET'])
+def home():
+    return "Bienvenue sur mon API Transcription YouTube ! Utilisez /transcribe pour récupérer une transcription.", 200
+
+
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
     data = request.get_json()
@@ -33,3 +38,4 @@ def transcribe():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+    
