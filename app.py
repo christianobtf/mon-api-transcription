@@ -2,23 +2,33 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from youtube_transcript_api import YouTubeTranscriptApi
 import re
-import json
 import os
 
 app = Flask(__name__)
-CORS(app)  # Autorise tous les domaines à appeler ton API
+CORS(app)
 
 def extract_video_id(url):
     if not url:
         return None
     url = url.strip()
-    pattern = r'(?:v=|youtu\\.be/|embed/|watch\\?v=)([\\w-]{11})'
-    match = re.search(pattern, url)
-    return match.group(1) if match else None
+
+    # CORRECT : 1 seul \ et plusieurs patterns acceptés
+    patterns = [
+        r'(?:v=)([0-9A-Za-z_-]{11})',            # pour https://www.youtube.com/watch?v=xxx
+        r'(?:youtu\.be/)([0-9A-Za-z_-]{11})',     # pour https://youtu.be/xxx
+        r'(?:embed/)([0-9A-Za-z_-]{11})'          # pour https://youtube.com/embed/xxx
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            return match.group(1)
+
+    return None
 
 @app.route('/', methods=['GET'])
 def home():
-    return "Bienvenue sur mon API de transcription YouTube hébergée sur Render !", 200
+    return "Bienvenue sur mon API Transcription YouTube hébergée sur Render !", 200
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
@@ -38,7 +48,6 @@ def transcribe():
         transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['fr', 'en'])
         full_transcription = ' '.join([entry['text'] for entry in transcript_list])
 
-        # Pas d'enregistrement local de fichier JSON car Render est en serveur stateless
         return jsonify({
             "success": True,
             "transcription": full_transcription,
@@ -46,14 +55,12 @@ def transcribe():
         }), 200
 
     except Exception as e:
-        # Retourner 200 même en cas d'erreur pour que n8n continue
         return jsonify({
             "success": False,
-            "transcription": None,
-            "error": str(e)
+            "error": str(e),
+            "transcription": None
         }), 200
 
 if __name__ == '__main__':
-    # Render attend que ton app Flask écoute sur '0.0.0.0' et prenne le port fourni par l'environnement
-    port = int(os.environ.get('PORT', 10000))  # Par défaut 10000 si PORT non trouvé (utile pour tests locaux)
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
