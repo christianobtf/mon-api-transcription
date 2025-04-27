@@ -7,9 +7,10 @@ app = Flask(__name__)
 CORS(app)
 
 def extract_video_id(url):
-    pattern = r'(?:v=|youtu\\.be/|embed/)([\\w-]{11})'
+    pattern = r'(?:v=|youtu\.be/|embed/)([\w-]{11})'
     match = re.search(pattern, url)
     return match.group(1) if match else None
+
 
 @app.route('/', methods=['GET'])
 def home():
